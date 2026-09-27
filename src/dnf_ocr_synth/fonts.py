@@ -30,6 +30,7 @@ def _load_face(paths: FontPaths, name: str) -> _Face:
     settings = {
         "dotum": (paths.gulim, "gulim", 2, 11, "1", 0),
         "gungsuh": (paths.batang, "batang", 2, 12, "1", 1),
+        "hanja": (paths.batang, "batang", 2, 12, "1", 0),
         "nanum": (paths.nanum, "nanum", 0, 11, "L", 0),
     }
     location, option, index, size, mode, bold_x = settings[name]

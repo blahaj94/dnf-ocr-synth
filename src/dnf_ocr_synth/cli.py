@@ -29,7 +29,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Text color as RGB values (0-255; default: 75 209 255)",
     )
     parser.add_argument("--gulim", type=Path)
-    parser.add_argument("--batang", type=Path)
+    parser.add_argument(
+        "--batang",
+        type=Path,
+        help="Font for Hanja in both profiles and nanum-neo fallback",
+    )
     parser.add_argument("--nanum", type=Path)
     scaling = parser.add_mutually_exclusive_group()
     scaling.add_argument("--scale", type=float)

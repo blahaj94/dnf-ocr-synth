@@ -42,8 +42,8 @@ sample.save("nickname.png")
 
 `FontPaths`에 사용할 폰트의 파일 경로를 추가합니다
 
-- 돋움 모드(`dotum`)는 `gulim.ttc`
-- 나눔스퀘어 네오 모드(`nanum-neo`)는 `NanumSquareNeoOTF-cBd.otf`를 사용하고, Fallback으로 `batang.ttc` 폰트가 추가적으로 필요합니다.
+- 돋움 모드(`dotum`)는 `gulim.ttc`를 사용합니다. 한자가 포함되면 `batang.ttc`도 필요합니다.
+- 나눔스퀘어 네오 모드(`nanum-neo`)는 `NanumSquareNeoOTF-cBd.otf`를 사용합니다. 한자나 이 파일에 없는 문자를 그릴 때는 `batang.ttc`도 필요합니다.
 
 
 ## 렌더링 옵션
@@ -52,12 +52,22 @@ sample.save("nickname.png")
 | --- | --- |
 | `profile="dotum"` | 돋움 |
 | `profile="nanum-neo"` | 나눔스퀘어 네오 |
-| `layout="metrics"` (기본값) | 폰트에 정해진 글자 간격과 기준선에 따라 배치합니다. 실제 게임 화면의 글자 간격과는 차이가 있을 수 있습니다. |
+| `layout="metrics"` (기본값) | 한자는 게임 화면에서 확인한 간격을 적용합니다. 그 밖의 문자는 폰트의 글자 폭과 기준선에 따라 배치합니다. |
 | `color` / `--color R G B` | 글자색을 RGB로 지정합니다. 각 값은 0~255의 정수이며, 기본값은 `(75, 209, 255)`입니다. |
 | `scale` / `--scale` | 글자를 이미지로 만든 뒤 지정한 배율을 적용합니다. 0 ~ 16 |
 | `--ui-percent` | 게임의 UI 크기 설정에 맞춰 배율을 추정합니다. `--scale`과 함께 사용할 수 없습니다. |
 
 예를 들어 실행 명령에 `--color 255 255 255`를 붙이면 글자를 흰색으로 그립니다. Python에서는 `renderer.render("닉네임", color=(255, 255, 255))`처럼 지정합니다.
+
+한자는 두 모드 모두 `batang.ttc`의 12px 비트맵을 사용하며, 획을 추가로 굵게 만들지 않습니다. 돋움은 글자의 획이 차지하는 가로 폭에 1px을 더한 만큼 다음 글자로 이동하고, 나눔은 11px씩 이동합니다. `一`처럼 폭이 좁은 한자도 이 규칙을 따릅니다. 글자별 기준선 위치와 높이를 유지하므로 `電`의 아래쪽 획도 잘리지 않습니다.
+
+1920×1080, UI 0%의 `汞一電進龍` 스크린샷에서 글자색과 검은 1px 외곽선이 일치하는 것을 확인했습니다. UI 100%에서는 확대 후 획 가장자리의 밝기에 차이가 남아 있습니다. 한글·일본어·특수문자가 섞인 닉네임의 전체 배치는 아직 검증하지 않았습니다.
+
+돋움 모드에서 한자를 그리는 예제입니다.
+
+```powershell
+python -m dnf_ocr_synth '汞一電進龍' --gulim 'C:/Windows/Fonts/gulim.ttc' --batang 'C:/Windows/Fonts/batang.ttc' --ui-percent 0 --output output/hanja.png
+```
 
 ## 닉네임 검사
 
@@ -96,7 +106,7 @@ with (output / "labels.jsonl").open("w", encoding="utf-8") as manifest:
         manifest.write(json.dumps(record, ensure_ascii=False) + "\n")
 ```
 
-PNG에도 입력한 닉네임과 생성에 사용한 정보를 저장합니다. 여기에는 글자별 폰트, 글자 배치, 배율, 폰트 파일의 SHA-256, Pillow·FreeType 버전 등이 포함됩니다.
+PNG에도 입력한 닉네임과 생성에 사용한 정보를 저장합니다. 여기에는 글자별 폰트, 다음 글자까지 이동하는 거리(`glyphs[].advance_px`, 확대 전 픽셀), 배율, 폰트 파일의 SHA-256, Pillow·FreeType 버전 등이 포함됩니다.
 
 이 정보는 `dnf_ocr_synth`라는 키에 JSON으로 들어 있습니다. 
 
@@ -128,12 +138,14 @@ python -m build
 | 파일 | 사용하는 글꼴 | 용도 | 준비 방법 |
 | --- | --- | --- | --- |
 | `gulim.ttc` | 돋움, 글꼴 번호 2 | 돋움 모드에서 닉네임을 그릴 때 사용합니다. | Windows에 설치된 `C:/Windows/Fonts/gulim.ttc`를 사용합니다. |
-| `batang.ttc` | 궁서, 글꼴 번호 2 | 나눔스퀘어 네오에 없는 `ァ`, `ぎ` 등의 문자를 그릴 때 사용합니다. | Windows에 설치된 `C:/Windows/Fonts/batang.ttc`를 사용합니다. |
+| `batang.ttc` | 궁서, 글꼴 번호 2 | 두 모드의 한자와 나눔스퀘어 네오에 없는 `ァ`, `ぎ` 등의 문자를 그릴 때 사용합니다. | Windows에 설치된 `C:/Windows/Fonts/batang.ttc`를 사용합니다. |
 | `NanumSquareNeoOTF-cBd.otf` | 나눔스퀘어 네오 Bold | 나눔스퀘어 네오 모드에서 사용합니다. | [네이버 공식 배포처](https://campaign.naver.com/nanumsquare_neo/)에서 준비합니다. |
 
 TTC 파일에는 여러 글꼴이 들어 있습니다. `gulim.ttc`에서는 돋움을, `batang.ttc`에서는 궁서를 선택합니다. 표의 글꼴 번호는 파일 안에서 글꼴을 구분하는 `face index`입니다.
 
 나눔스퀘어 네오에 없는 문자를 궁서로 그리는 방식은 `ァÐぎ★` 샘플을 비교해 정했습니다. 해당 문자는 궁서와 궁서체의 12px·13px에서 같은 모양으로 나왔습니다. 따라서 게임이 실제로 어떤 글꼴과 크기를 사용하는지, 다른 문자도 같은 방식으로 처리하는지는 아직 확인하지 못했습니다.
+
+한자는 `汞一電進龍` 샘플로 바탕 파일 쪽 비트맵과 일치하는 것을 확인했습니다. 이 파일 안의 네 글꼴은 해당 한자들의 12px 비트맵이 같으므로, 게임이 어느 글꼴을 선택했는지까지 구분한 것은 아닙니다. 일본어 등에 적용하던 굵기 보정은 한자에 적용하지 않습니다.
 
 ## 폰트 보관과 라이선스
 

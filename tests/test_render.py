@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import subprocess
@@ -176,3 +177,46 @@ class NanumTests(unittest.TestCase):
             {font["id"] for font in sample.metadata["fonts"]},
             {"nanum", "gungsuh"},
         )
+
+
+@unittest.skipUnless(
+    FONTS.gulim.is_file()
+    and FONTS.batang.is_file()
+    and NANUM
+    and Path(NANUM).is_file(),
+    "Set DNF_SYNTH_NANUM and supply local Windows fonts",
+)
+class HanjaTests(unittest.TestCase):
+    def test_unscaled_nickname_matches_game_pixels(self):
+        # Hashes come from the supplied 1920x1080, UI 0% screenshots.
+        # Keep cyan text and black outline; remove the game background.
+        expected = {
+            "dotum": (
+                (62, 16),
+                "5f13800c90fca8570d09f15e4b5976fb0a3"
+                "e84c24758b548dcefbf57e130e928",
+            ),
+            "nanum-neo": (
+                (59, 16),
+                "51d026052557508690e7e3aaaccb4257e6"
+                "0c164c46d4e790890ff8d936aad0e8",
+            ),
+        }
+        renderer = Renderer(FONTS)
+        for profile, (size, digest) in expected.items():
+            with self.subTest(profile=profile):
+                sample = renderer.render("汞一電進龍", profile=profile)
+                self.assertEqual(sample.image.size, size)
+                self.assertEqual(
+                    hashlib.sha256(sample.image.tobytes()).hexdigest(),
+                    digest,
+                )
+
+    def test_compatibility_hanja_keeps_original_label(self):
+        text = "金"
+        renderer = Renderer(FONTS)
+        for profile in ("dotum", "nanum-neo"):
+            with self.subTest(profile=profile):
+                sample = renderer.render(text, profile=profile)
+                self.assertEqual(sample.metadata["text"], text)
+                self.assertEqual(sample.metadata["glyphs"][0]["font"], "hanja")
