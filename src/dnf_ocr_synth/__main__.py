@@ -1,13 +1,14 @@
 """Generate one PNG from the command line."""
 
 import argparse
+import sys
 from pathlib import Path
 
 from . import FontPaths, Renderer, estimate_ui_scale
 
 
-def main() -> None:
-    """Parse explicit font paths and save a self-describing PNG."""
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse CLI options and resolve the requested image scale."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "text", help="Original CP949 nickname (up to 12 bytes)"
@@ -26,21 +27,35 @@ def main() -> None:
     scaling.add_argument("--scale", type=float)
     scaling.add_argument("--ui-percent", type=float)
     parser.add_argument("--client-height", type=int, default=1080)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    if args.ui_percent is not None:
+        try:
+            args.scale = estimate_ui_scale(args.ui_percent, args.client_height)
+        except ValueError as error:
+            parser.exit(2, f"error: {error}\n")
+    elif args.client_height != 1080:
+        parser.error("--client-height requires --ui-percent")
+    elif args.scale is None:
+        args.scale = 1.0
+    return args
+
+
+def main() -> None:
+    """Render and save a PNG using the parsed CLI options."""
+    args = parse_args()
     try:
-        scale = args.scale if args.scale is not None else 1.0
-        if args.ui_percent is not None:
-            scale = estimate_ui_scale(args.ui_percent, args.client_height)
-        elif args.client_height != 1080:
-            parser.error("--client-height requires --ui-percent")
         renderer = Renderer(FontPaths(args.gulim, args.batang, args.nanum))
         sample = renderer.render(
-            args.text, profile=args.profile, layout=args.layout, scale=scale
+            args.text,
+            profile=args.profile,
+            layout=args.layout,
+            scale=args.scale,
         )
         args.output.parent.mkdir(parents=True, exist_ok=True)
         sample.save(args.output)
     except (OSError, ValueError) as error:
-        parser.exit(2, f"error: {error}\n")
+        print(f"error: {error}", file=sys.stderr)
+        raise SystemExit(2) from None
     print(args.output)
 
 
