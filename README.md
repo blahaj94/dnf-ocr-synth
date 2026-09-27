@@ -26,7 +26,6 @@ renderer = Renderer(
         gulim=Path("C:/Windows/Fonts/gulim.ttc"),
         batang=Path("C:/Windows/Fonts/batang.ttc"),
         nanum=Path("C:/fonts/NanumSquareNeoOTF-cBd.otf"),
-        uttum=Path("C:/Program Files/DNF/Fonts/UttumBatangBold.ttf"),
     )
 )
 sample = renderer.render(
@@ -41,12 +40,11 @@ sample.save("nickname.png")
 # sample.metadata["text"]: OCR 정답으로 사용할 닉네임
 ```
 
-`FontPaths`에 사용할 폰트의 파일 경로를 지정합니다. 파일을 저장한 위치가 예제와 다르면 경로를 바꿔 주세요.
+`FontPaths`에 사용할 폰트의 파일 경로를 추가합니다
 
-- 돋움 모드(`dotum`)의 영문·숫자는 `gulim.ttc`의 돋움체를 사용합니다. 대문자 `I`에는 `UttumBatangBold.ttf`가 필요합니다. 한자는 `batang.ttc`를, 그 밖의 문자는 `gulim.ttc`의 돋움을 사용합니다.
+- 돋움 모드(`dotum`)는 `gulim.ttc`를 사용합니다. 한자가 포함되면 `batang.ttc`도 필요합니다.
 - 나눔스퀘어 네오 모드(`nanum-neo`)는 `NanumSquareNeoOTF-cBd.otf`를 사용합니다. 한자나 이 파일에 없는 문자를 그릴 때는 `batang.ttc`도 필요합니다.
 
-그릴 문자에 필요한 폰트 경로만 지정하면 됩니다. 예를 들어 돋움 모드에서 `I`만 그릴 때는 `uttum`만 필요하고, `1O456`을 그릴 때는 `gulim`만 필요합니다.
 
 ## 렌더링 옵션
 
@@ -54,7 +52,7 @@ sample.save("nickname.png")
 | --- | --- |
 | `profile="dotum"` | 돋움 |
 | `profile="nanum-neo"` | 나눔스퀘어 네오 |
-| `layout="metrics"` (기본값) | 한자와 돋움 모드의 영문·숫자는 게임 화면에서 확인한 간격을 적용합니다. 그 밖의 문자는 폰트의 글자 폭과 기준선에 따라 배치합니다. |
+| `layout="metrics"` (기본값) | 한자는 게임 화면에서 확인한 간격을 적용합니다. 그 밖의 문자는 폰트의 글자 폭과 기준선에 따라 배치합니다. |
 | `color` / `--color R G B` | 글자색을 RGB로 지정합니다. 각 값은 0~255의 정수이며, 기본값은 `(75, 209, 255)`입니다. |
 | `scale` / `--scale` | 글자를 이미지로 만든 뒤 지정한 배율을 적용합니다. 0 ~ 16 |
 | `--ui-percent` | 게임의 UI 크기 설정에 맞춰 배율을 추정합니다. `--scale`과 함께 사용할 수 없습니다. |
@@ -64,16 +62,6 @@ sample.save("nickname.png")
 한자는 두 모드 모두 `batang.ttc`의 12px 비트맵을 사용하며, 획을 추가로 굵게 만들지 않습니다. 돋움은 글자의 획이 차지하는 가로 폭에 1px을 더한 만큼 다음 글자로 이동하고, 나눔은 11px씩 이동합니다. `一`처럼 폭이 좁은 한자도 이 규칙을 따릅니다. 글자별 기준선 위치와 높이를 유지하므로 `電`의 아래쪽 획도 잘리지 않습니다.
 
 1920×1080, UI 0%의 `汞一電進龍` 스크린샷에서 글자색과 검은 1px 외곽선이 일치하는 것을 확인했습니다. UI 100%에서는 확대 후 획 가장자리의 밝기에 차이가 남아 있습니다. 한글·일본어·특수문자가 섞인 닉네임의 전체 배치는 아직 검증하지 않았습니다.
-
-돋움 모드의 영문·숫자(`A–Z`, `a–z`, `0–9`)는 돋움체 11px로 그립니다. 대문자 `I`만 UttumBatang Bold 12px로 그립니다. 글자 사이의 빈 칸은 1px이며, 숫자 `1` 뒤에는 3px을 띄웁니다. 세로 위치는 폰트의 기준선을 따르므로 `g`, `j`의 아래쪽 획도 유지됩니다.
-
-1920×1080, UI 0%의 `MWmwgjI1O456`, `Il1O0I123789`, `IlIlIIllIlIl` 스크린샷에서 글자와 검은 외곽선이 픽셀 단위로 일치했습니다. 확인한 문자는 숫자 `0–9` 전체와 영문 `M W O m w g j l I`입니다. 나머지 영문에도 같은 규칙을 적용하지만, 게임 화면과의 비교는 아직 하지 않았습니다. 나눔스퀘어 네오의 영문·숫자는 별도 검증이 필요하며, 이 규칙을 적용하지 않습니다.
-
-대문자 `I`가 포함된 돋움 닉네임을 그리는 예제입니다.
-
-```powershell
-python -m dnf_ocr_synth 'MWmwgjI1O456' --gulim 'C:/Windows/Fonts/gulim.ttc' --uttum 'C:/Program Files/DNF/Fonts/UttumBatangBold.ttf' --ui-percent 0 --output output/ascii.png
-```
 
 돋움 모드에서 한자를 그리는 예제입니다.
 
@@ -137,7 +125,6 @@ with Image.open("nickname.png") as image:
 ```powershell
 python -m pip install -e '.[dev]'
 $env:DNF_SYNTH_NANUM = 'C:/fonts/NanumSquareNeoOTF-cBd.otf'
-$env:DNF_SYNTH_UTTUM = 'C:/Program Files/DNF/Fonts/UttumBatangBold.ttf'
 python -m unittest discover -s tests -v
 python -m ruff check .
 python -m ruff format --check .
@@ -146,18 +133,15 @@ python -m build
 
 ## 사용하는 폰트
 
-아래 네 파일 중 그릴 문자에 필요한 파일을 사용합니다. **저장소에는 폰트 파일이 들어 있지 않습니다.** 각 폰트의 사용 조건을 확인한 뒤 직접 준비해야 합니다.
+아래 세 파일을 사용합니다. **저장소에는 폰트 파일이 들어 있지 않습니다.** 각 폰트의 사용 조건을 확인한 뒤 직접 준비해야 합니다.
 
 | 파일 | 사용하는 글꼴 | 용도 | 준비 방법 |
 | --- | --- | --- | --- |
-| `gulim.ttc` | 돋움 번호 2, 돋움체 번호 3 | 돋움 모드의 영문·숫자(대문자 `I` 제외)는 돋움체로, 한자를 제외한 그 밖의 문자는 돋움으로 그립니다. | Windows에 설치된 `C:/Windows/Fonts/gulim.ttc`를 사용합니다. |
+| `gulim.ttc` | 돋움, 글꼴 번호 2 | 돋움 모드에서 닉네임을 그릴 때 사용합니다. | Windows에 설치된 `C:/Windows/Fonts/gulim.ttc`를 사용합니다. |
 | `batang.ttc` | 궁서, 글꼴 번호 2 | 두 모드의 한자와 나눔스퀘어 네오에 없는 `ァ`, `ぎ` 등의 문자를 그릴 때 사용합니다. | Windows에 설치된 `C:/Windows/Fonts/batang.ttc`를 사용합니다. |
 | `NanumSquareNeoOTF-cBd.otf` | 나눔스퀘어 네오 Bold | 나눔스퀘어 네오 모드에서 사용합니다. | [네이버 공식 배포처](https://campaign.naver.com/nanumsquare_neo/)에서 준비합니다. |
-| `UttumBatangBold.ttf` | UttumBatang Bold | 돋움 모드의 대문자 `I`를 그릴 때 사용합니다. | 로컬 DNF 설치 폴더의 `Fonts/UttumBatangBold.ttf` 경로를 지정합니다. |
 
-TTC 파일에는 여러 글꼴이 들어 있습니다. `gulim.ttc`에서는 문자에 따라 돋움이나 돋움체를, `batang.ttc`에서는 궁서를 선택합니다. 표의 글꼴 번호는 파일 안에서 글꼴을 구분하는 `face index`입니다.
-
-대문자 `I`에 UttumBatang Bold를 사용하는 것은 비교한 게임 화면과 글자 모양이 같았기 때문입니다. 게임 내부에서도 이 폰트를 선택하는지까지 확인한 것은 아닙니다.
+TTC 파일에는 여러 글꼴이 들어 있습니다. `gulim.ttc`에서는 돋움을, `batang.ttc`에서는 궁서를 선택합니다. 표의 글꼴 번호는 파일 안에서 글꼴을 구분하는 `face index`입니다.
 
 나눔스퀘어 네오에 없는 문자를 궁서로 그리는 방식은 `ァÐぎ★` 샘플을 비교해 정했습니다. 해당 문자는 궁서와 궁서체의 12px·13px에서 같은 모양으로 나왔습니다. 따라서 게임이 실제로 어떤 글꼴과 크기를 사용하는지, 다른 문자도 같은 방식으로 처리하는지는 아직 확인하지 못했습니다.
 
@@ -168,5 +152,4 @@ TTC 파일에는 여러 글꼴이 들어 있습니다. `gulim.ttc`에서는 문�
 - 폰트 파일은 각자 사용하는 컴퓨터에 보관합니다. 폰트 파일과 `fonts/local/` 폴더는 Git에 올라가지 않도록 `.gitignore`에 등록되어 있습니다.
 - Windows 폰트는 Windows에 설치된 파일을 읽어서 사용합니다. 저장소, 배포 파일, 컨테이너에는 넣지 않습니다. 자세한 내용은 [Microsoft 폰트 재배포 안내](https://learn.microsoft.com/en-us/typography/fonts/font-faq)를 확인해 주세요.
 - 나눔스퀘어 네오는 OFL 1.1로 배포되지만, 이 저장소에는 폰트 파일을 포함하지 않습니다. 사용 조건은 [네이버 나눔글꼴 라이선스](https://help.naver.com/service/30016/contents/18088?osType=PC&lang=ko)를 확인해 주세요.
-- `UttumBatangBold.ttf`는 직접 준비한 로컬 파일을 읽습니다. 이 저장소에서는 파일을 배포하거나 자동으로 다운로드하지 않습니다.
 - 닉네임을 그린 PNG와 글자별 이미지를 모아 만든 비트맵 폰트는 배포 조건이 다릅니다. 글자별 이미지 묶음은 저장소에 포함하지 않습니다.
