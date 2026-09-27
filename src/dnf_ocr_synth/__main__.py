@@ -10,7 +10,14 @@ def main() -> None:
     """Render and save a PNG using the parsed CLI options."""
     args = parse_args()
     try:
-        renderer = Renderer(FontPaths(args.gulim, args.batang, args.nanum))
+        renderer = Renderer(
+            FontPaths(
+                gulim=args.gulim,
+                batang=args.batang,
+                nanum=args.nanum,
+                uttum=args.uttum,
+            )
+        )
         sample = renderer.render(
             args.text,
             profile=args.profile,

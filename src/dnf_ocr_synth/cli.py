@@ -35,6 +35,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Font for Hanja in both profiles and nanum-neo fallback",
     )
     parser.add_argument("--nanum", type=Path)
+    parser.add_argument(
+        "--uttum",
+        type=Path,
+        help="UttumBatangBold.ttf for capital I in the dotum profile",
+    )
     scaling = parser.add_mutually_exclusive_group()
     scaling.add_argument("--scale", type=float)
     scaling.add_argument("--ui-percent", type=float)
