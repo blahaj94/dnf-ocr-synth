@@ -15,6 +15,7 @@ class FontPaths:
     gulim: Path | None = None
     batang: Path | None = None
     nanum: Path | None = None
+    uttum: Path | None = None
 
 
 @dataclass
@@ -29,6 +30,8 @@ class _Face:
 def _load_face(paths: FontPaths, name: str) -> _Face:
     settings = {
         "dotum": (paths.gulim, "gulim", 2, 11, "1", 0),
+        "dotumche": (paths.gulim, "gulim", 3, 11, "1", 0),
+        "uttum": (paths.uttum, "uttum", 0, 12, "1", 0),
         "gungsuh": (paths.batang, "batang", 2, 12, "1", 1),
         "hanja": (paths.batang, "batang", 2, 12, "1", 0),
         "nanum": (paths.nanum, "nanum", 0, 11, "L", 0),

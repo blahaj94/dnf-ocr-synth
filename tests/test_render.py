@@ -154,6 +154,18 @@ class DotumTests(unittest.TestCase):
     "Set DNF_SYNTH_NANUM to run local mixed-font tests",
 )
 class NanumTests(unittest.TestCase):
+    def test_ascii_output_is_unchanged_and_needs_only_nanum(self):
+        renderer = Renderer(FontPaths(nanum=FONTS.nanum))
+        sample = renderer.render("MWmwgjI1O456", profile="nanum-neo")
+        self.assertEqual(
+            {glyph["font"] for glyph in sample.metadata["glyphs"]},
+            {"nanum"},
+        )
+        self.assertEqual(
+            hashlib.sha256(sample.image.tobytes()).hexdigest(),
+            "a0391c1614238eca31aea93b592e253d96a6cff87fd3d3ac31a79f1d7d88a832",
+        )
+
     def test_mixed_script_fallback_sources(self):
         sample = Renderer(FONTS).render(NICKNAME, profile="nanum-neo")
         self.assertEqual(

@@ -99,7 +99,7 @@ def _colorize(
 class Renderer:
     """Reuse loaded local fonts across nickname samples.
 
-    Hanja uses measured profile spacing and a shared font baseline.
+    Hanja and Dotum ASCII letters/digits use measured spacing.
     Other characters retain font advances. Arbitrary mixed-script
     nicknames have not been verified against the game.
     """
@@ -119,7 +119,12 @@ class Renderer:
         if 0x4E00 <= codepoint <= 0x9FFF or 0xF900 <= codepoint <= 0xFAFF:
             choices = ["hanja"]
         elif profile == "dotum":
-            choices = ["dotum"]
+            if character == "I":
+                choices = ["uttum"]
+            elif character.isascii() and character.isalnum():
+                choices = ["dotumche"]
+            else:
+                choices = ["dotum"]
         else:
             choices = ["nanum", "gungsuh"]
         for name in choices:
@@ -176,20 +181,25 @@ class Renderer:
             face = self._load(name)
             glyph, (x, y) = _raster(character, face)
             masks.append(glyph)
-            positions.append((cursor + x, y))
-            if name == "hanja":
+            if name in {"dotumche", "uttum"}:
+                # Game ASCII spacing starts at the first ink column.
+                x = 0
+                advance = glyph.width + (3 if character == "1" else 1)
+            elif name == "hanja":
                 advance = glyph.width + 1 if profile == "dotum" else 11
             else:
                 advance = round(face.font.getlength(character)) + face.bold_x
+            positions.append((cursor + x, y))
             advances.append(advance)
             cursor += advance
         mask = _compose(masks, positions)
         image = _colorize(mask, scale, color)
-        primary = "dotum" if profile == "dotum" else "nanum"
-        inspected_fonts = dict.fromkeys([primary, *names])
+        inspected_fonts = dict.fromkeys(
+            ["nanum", *names] if profile == "nanum-neo" else names
+        )
         metadata = {
             "schema_version": 1,
-            "renderer_version": "0.1.1",
+            "renderer_version": "0.1.2",
             "text": text,
             "codepoints": [f"U+{ord(character):04X}" for character in text],
             "cp949_bytes": validation.byte_length,
