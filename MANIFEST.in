@@ -1,0 +1,2 @@
+include docs/calibration.md
+global-exclude *.ttf *.otf *.ttc *.otc *.woff *.woff2 *.eot
