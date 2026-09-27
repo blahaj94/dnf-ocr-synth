@@ -18,9 +18,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--profile", choices=("dotum", "nanum-neo"), default="dotum"
     )
-    parser.add_argument(
-        "--layout", choices=("metrics", "reference"), default="metrics"
-    )
+    parser.add_argument("--layout", choices=("metrics",), default="metrics")
     parser.add_argument("--gulim", type=Path)
     parser.add_argument("--batang", type=Path)
     parser.add_argument("--nanum", type=Path)

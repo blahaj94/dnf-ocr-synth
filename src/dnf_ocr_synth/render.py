@@ -11,7 +11,6 @@ from PIL.PngImagePlugin import PngInfo
 from .fonts import FontPaths, _Face, _load_face
 from .nickname import validate_nickname
 
-REFERENCE_TEXT = "ァÐぎ★"
 COLOR = (75, 209, 255)
 
 
@@ -70,31 +69,6 @@ def _compose(
     return canvas
 
 
-def _dotum_reference(face: _Face) -> Image.Image:
-    # This run segmentation is valid only for the four reference glyphs.
-    mask, _ = _raster(REFERENCE_TEXT, face)
-    runs = []
-    start = None
-    for x in range(mask.width + 1):
-        occupied = (
-            x < mask.width
-            and mask.crop((x, 0, x + 1, mask.height)).getbbox() is not None
-        )
-        if occupied and start is None:
-            start = x
-        elif not occupied and start is not None:
-            runs.append(mask.crop((start, 0, x, mask.height)))
-            start = None
-    if len(runs) != 4:
-        raise ValueError("This font does not support the Dotum calibration.")
-    positions = []
-    cursor = 0
-    for run in runs:
-        positions.append((cursor, 0))
-        cursor += run.width + 1
-    return _compose(runs, positions)
-
-
 def _colorize(mask: Image.Image, scale: float) -> Image.Image:
     # Padding holds the 1px square outline and a transparent margin.
     ink = Image.new("L", (mask.width + 4, mask.height + 4))
@@ -123,9 +97,8 @@ def _colorize(mask: Image.Image, scale: float) -> Image.Image:
 class Renderer:
     """Reuse loaded local fonts across nickname samples.
 
-    'metrics' uses font advances and a shared baseline. 'reference' only
-    reproduces the measured placement of ァÐぎ★. Neither mode claims a
-    verified game layout for arbitrary nicknames.
+    Glyphs use font advances and a shared baseline. Their placement
+    has not been verified against the game for arbitrary nicknames.
     """
 
     def __init__(self, fonts: FontPaths) -> None:
@@ -167,12 +140,8 @@ class Renderer:
             raise ValueError(validation.reason)
         if profile not in {"dotum", "nanum-neo"}:
             raise ValueError("profile must be 'dotum' or 'nanum-neo'.")
-        if layout not in {"metrics", "reference"}:
-            raise ValueError("layout must be 'metrics' or 'reference'.")
-        if layout == "reference" and text != REFERENCE_TEXT:
-            raise ValueError(
-                f"reference layout only supports {REFERENCE_TEXT}."
-            )
+        if layout != "metrics":
+            raise ValueError("layout must be 'metrics'.")
         if (
             isinstance(scale, bool)
             or not math.isfinite(scale)
@@ -180,25 +149,16 @@ class Renderer:
         ):
             raise ValueError("scale must be finite and in (0, 16].")
         names = [self._select(character, profile) for character in text]
-        if layout == "reference" and profile == "dotum":
-            mask = _dotum_reference(self._load("dotum"))
-        else:
-            masks = []
-            positions = []
-            cursor = 0
-            for character, name in zip(text, names):
-                face = self._load(name)
-                glyph, (x, y) = _raster(character, face)
-                masks.append(glyph)
-                positions.append((cursor + x, y))
-                cursor += round(face.font.getlength(character)) + face.bold_x
-            if layout == "reference":
-                if names != ["gungsuh", "gungsuh", "gungsuh", "nanum"]:
-                    raise ValueError(
-                        "Font coverage differs from the calibration."
-                    )
-                positions = [(0, 5), (9, 2), (18, 0), (26, 1)]
-            mask = _compose(masks, positions)
+        masks = []
+        positions = []
+        cursor = 0
+        for character, name in zip(text, names):
+            face = self._load(name)
+            glyph, (x, y) = _raster(character, face)
+            masks.append(glyph)
+            positions.append((cursor + x, y))
+            cursor += round(face.font.getlength(character)) + face.bold_x
+        mask = _compose(masks, positions)
         image = _colorize(mask, scale)
         primary = "dotum" if profile == "dotum" else "nanum"
         inspected_fonts = dict.fromkeys([primary, *names])
