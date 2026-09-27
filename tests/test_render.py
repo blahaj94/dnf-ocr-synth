@@ -31,6 +31,12 @@ class InputTests(unittest.TestCase):
             (NICKNAME, {"scale": 0}),
             (NICKNAME, {"scale": 17}),
             (NICKNAME, {"scale": float("nan")}),
+            (NICKNAME, {"color": (-1, 0, 0)}),
+            (NICKNAME, {"color": (256, 0, 0)}),
+            (NICKNAME, {"color": (1.5, 0, 0)}),
+            (NICKNAME, {"color": (True, 0, 0)}),
+            (NICKNAME, {"color": (0, 0)}),
+            (NICKNAME, {"color": (0, 0, 0, 0)}),
         ):
             with self.subTest(text=text, options=options):
                 with self.assertRaises(ValueError):
@@ -90,6 +96,22 @@ class DotumTests(unittest.TestCase):
         finally:
             face.coverage = original
 
+    def test_custom_color_preserves_mask_and_outline(self):
+        original = self.renderer.render(NICKNAME)
+        sample = self.renderer.render(NICKNAME, color=(255, 128, 0))
+        self.assertEqual(original.metadata["foreground_rgb"], [75, 209, 255])
+        self.assertEqual(sample.metadata["foreground_rgb"], [255, 128, 0])
+        self.assertEqual(
+            sample.native_mask.tobytes(), original.native_mask.tobytes()
+        )
+        self.assertEqual(
+            sample.image.getchannel("A").tobytes(),
+            original.image.getchannel("A").tobytes(),
+        )
+        pixels = sample.image.get_flattened_data()
+        self.assertIn((255, 128, 0, 255), pixels)
+        self.assertIn((0, 0, 0, 255), pixels)
+
     def test_cli_produces_readable_training_sample(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "sample.png"
@@ -103,6 +125,10 @@ class DotumTests(unittest.TestCase):
                     str(FONTS.gulim),
                     "--ui-percent",
                     "100",
+                    "--color",
+                    "255",
+                    "0",
+                    "0",
                     "--output",
                     str(path),
                 ],
@@ -116,6 +142,10 @@ class DotumTests(unittest.TestCase):
                 self.assertEqual(metadata["text"], NICKNAME)
                 self.assertEqual(metadata["layout"], "metrics")
                 self.assertEqual(metadata["scale"], 1.8)
+                self.assertEqual(metadata["foreground_rgb"], [255, 0, 0])
+                self.assertIsNotNone(image.getchannel("R").getbbox())
+                self.assertIsNone(image.getchannel("G").getbbox())
+                self.assertIsNone(image.getchannel("B").getbbox())
 
 
 @unittest.skipUnless(

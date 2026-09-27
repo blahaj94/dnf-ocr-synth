@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from .nickname import estimate_ui_scale
+from .render import COLOR
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -19,6 +20,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--profile", choices=("dotum", "nanum-neo"), default="dotum"
     )
     parser.add_argument("--layout", choices=("metrics",), default="metrics")
+    parser.add_argument(
+        "--color",
+        nargs=3,
+        type=int,
+        metavar=("R", "G", "B"),
+        default=COLOR,
+        help="Text color as RGB values (0-255; default: 75 209 255)",
+    )
     parser.add_argument("--gulim", type=Path)
     parser.add_argument("--batang", type=Path)
     parser.add_argument("--nanum", type=Path)
@@ -27,6 +36,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     scaling.add_argument("--ui-percent", type=float)
     parser.add_argument("--client-height", type=int, default=1080)
     args = parser.parse_args(argv)
+    if any(not 0 <= value <= 255 for value in args.color):
+        parser.error("--color values must be between 0 and 255")
+    args.color = tuple(args.color)
     if args.ui_percent is not None:
         try:
             args.scale = estimate_ui_scale(args.ui_percent, args.client_height)

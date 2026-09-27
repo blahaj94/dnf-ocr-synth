@@ -16,6 +16,7 @@ def main() -> None:
             profile=args.profile,
             layout=args.layout,
             scale=args.scale,
+            color=args.color,
         )
         args.output.parent.mkdir(parents=True, exist_ok=True)
         sample.save(args.output)

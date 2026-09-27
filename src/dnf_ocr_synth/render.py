@@ -69,14 +69,16 @@ def _compose(
     return canvas
 
 
-def _colorize(mask: Image.Image, scale: float) -> Image.Image:
+def _colorize(
+    mask: Image.Image, scale: float, color: tuple[int, int, int]
+) -> Image.Image:
     # Padding holds the 1px square outline and a transparent margin.
     ink = Image.new("L", (mask.width + 4, mask.height + 4))
     ink.paste(mask, (2, 2))
     alpha = ink.filter(ImageFilter.MaxFilter(3))
-    # Premultiply cyan ink by its coverage within the black outline.
+    # Premultiply ink by its coverage within the black outline.
     channels = [
-        ink.point([round(i * c / 255) for i in range(256)]) for c in COLOR
+        ink.point([round(i * c / 255) for i in range(256)]) for c in color
     ]
     image = Image.merge("RGBa", (*channels, alpha))
     if scale != 1:
@@ -128,12 +130,14 @@ class Renderer:
         profile: str = "dotum",
         layout: str = "metrics",
         scale: float = 1.0,
+        color: tuple[int, int, int] = COLOR,
     ) -> Sample:
-        """Render a valid nickname as cyan ink with a 1px black outline.
+        """Render a nickname with an RGB fill and a 1px black outline.
 
         Scale in (0, 16] applies after rasterization. Missing glyphs
         raise ValueError. The label is never normalized, trimmed, or
         changed through character replacement.
+        Color contains three integer RGB values from 0 to 255.
         """
         validation = validate_nickname(text)
         if not validation.is_valid:
@@ -142,6 +146,15 @@ class Renderer:
             raise ValueError("profile must be 'dotum' or 'nanum-neo'.")
         if layout != "metrics":
             raise ValueError("layout must be 'metrics'.")
+        if len(color) != 3 or any(
+            isinstance(value, bool)
+            or not isinstance(value, int)
+            or not 0 <= value <= 255
+            for value in color
+        ):
+            raise ValueError(
+                "color must contain three integers from 0 to 255."
+            )
         if (
             isinstance(scale, bool)
             or not math.isfinite(scale)
@@ -159,7 +172,7 @@ class Renderer:
             positions.append((cursor + x, y))
             cursor += round(face.font.getlength(character)) + face.bold_x
         mask = _compose(masks, positions)
-        image = _colorize(mask, scale)
+        image = _colorize(mask, scale, color)
         primary = "dotum" if profile == "dotum" else "nanum"
         inspected_fonts = dict.fromkeys([primary, *names])
         metadata = {
@@ -171,7 +184,7 @@ class Renderer:
             "profile": profile,
             "layout": layout,
             "scale": scale,
-            "foreground_rgb": list(COLOR),
+            "foreground_rgb": list(color),
             "outline_rgb": [0, 0, 0],
             "outline_px": 1,
             "padding_px": 2,
