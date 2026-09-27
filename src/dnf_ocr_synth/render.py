@@ -99,8 +99,9 @@ def _colorize(
 class Renderer:
     """Reuse loaded local fonts across nickname samples.
 
-    Glyphs use font advances and a shared baseline. Their placement
-    has not been verified against the game for arbitrary nicknames.
+    Hanja uses measured profile spacing and a shared font baseline.
+    Other characters retain font advances. Arbitrary mixed-script
+    nicknames have not been verified against the game.
     """
 
     def __init__(self, fonts: FontPaths) -> None:
@@ -114,10 +115,15 @@ class Renderer:
         return self._faces[name]
 
     def _select(self, character: str, profile: str) -> str:
-        primary = "dotum" if profile == "dotum" else "nanum"
-        choices = [primary] if profile == "dotum" else [primary, "gungsuh"]
+        codepoint = ord(character)
+        if 0x4E00 <= codepoint <= 0x9FFF or 0xF900 <= codepoint <= 0xFAFF:
+            choices = ["hanja"]
+        elif profile == "dotum":
+            choices = ["dotum"]
+        else:
+            choices = ["nanum", "gungsuh"]
         for name in choices:
-            if ord(character) in self._load(name).coverage:
+            if codepoint in self._load(name).coverage:
                 return name
         raise ValueError(
             f"No glyph for U+{ord(character):04X} in profile {profile}."
@@ -164,20 +170,26 @@ class Renderer:
         names = [self._select(character, profile) for character in text]
         masks = []
         positions = []
+        advances = []
         cursor = 0
         for character, name in zip(text, names):
             face = self._load(name)
             glyph, (x, y) = _raster(character, face)
             masks.append(glyph)
             positions.append((cursor + x, y))
-            cursor += round(face.font.getlength(character)) + face.bold_x
+            if name == "hanja":
+                advance = glyph.width + 1 if profile == "dotum" else 11
+            else:
+                advance = round(face.font.getlength(character)) + face.bold_x
+            advances.append(advance)
+            cursor += advance
         mask = _compose(masks, positions)
         image = _colorize(mask, scale, color)
         primary = "dotum" if profile == "dotum" else "nanum"
         inspected_fonts = dict.fromkeys([primary, *names])
         metadata = {
             "schema_version": 1,
-            "renderer_version": "0.1.0",
+            "renderer_version": "0.1.1",
             "text": text,
             "codepoints": [f"U+{ord(character):04X}" for character in text],
             "cp949_bytes": validation.byte_length,
@@ -198,8 +210,12 @@ class Renderer:
                 dict(self._load(name).metadata) for name in inspected_fonts
             ],
             "glyphs": [
-                {"character": character, "font": name}
-                for character, name in zip(text, names)
+                {
+                    "character": character,
+                    "font": name,
+                    "advance_px": advance,
+                }
+                for character, name, advance in zip(text, names, advances)
             ],
         }
         return Sample(image, mask, metadata)
