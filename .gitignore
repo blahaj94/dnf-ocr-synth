@@ -1,0 +1,9 @@
+# 폰트 파일은 로컬에서만 준비합니다.
+*.ttf
+*.otf
+*.ttc
+*.otc
+*.woff
+*.woff2
+*.eot
+fonts/local/
